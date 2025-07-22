@@ -2,6 +2,11 @@
 
 #include "renderer.h"
 
+// ImGui includes for hardware renderer integration
+#include "imgui.h"
+#include "backends/imgui_impl_sdl2.h"
+#include "backends/imgui_impl_opengl3.h"
+
 // Avoid X11 if SDL was built without it
 #if !defined(SDL_VIDEO_DRIVER_X11) && defined(HAVE_LIBVA_X11)
 #warning Unable to use libva-x11 without SDL X11 backend
@@ -115,6 +120,9 @@ private:
 
     SDL_Window* m_Window;
     int m_VideoFormat;
+
+    // ImGui integration for hardware acceleration
+    bool m_ImGuiInitialized;
 
 #ifdef HAVE_EGL
     enum class EglExportType {

@@ -211,7 +211,14 @@ SOURCES += \
     gui/sdlgamepadkeynavigation.cpp \
     streaming/video/overlaymanager.cpp \
     backend/systemproperties.cpp \
-    wm.cpp
+    wm.cpp \
+    ../../imgui/imgui.cpp \
+    ../../imgui/imgui_draw.cpp \
+    ../../imgui/imgui_tables.cpp \
+    ../../imgui/imgui_widgets.cpp \
+    ../../imgui/backends/imgui_impl_sdl2.cpp \
+    ../../imgui/backends/imgui_impl_sdlrenderer2.cpp \
+    ../../imgui/backends/imgui_impl_opengl3.cpp
 
 HEADERS += \
     SDL_compat.h \
@@ -526,6 +533,10 @@ else:unix: LIBS += -L$$OUT_PWD/../h264bitstream/ -lh264bitstream
 
 INCLUDEPATH += $$PWD/../h264bitstream/h264bitstream
 DEPENDPATH += $$PWD/../h264bitstream/h264bitstream
+
+# ImGui integration
+INCLUDEPATH += $$PWD/../../imgui
+INCLUDEPATH += $$PWD/../../imgui/backends
 
 !winrt {
     win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../AntiHooking/release/ -lAntiHooking

@@ -18,6 +18,7 @@ SdlRenderer::SdlRenderer()
       m_Renderer(nullptr),
       m_Texture(nullptr),
       m_ColorSpace(-1),
+      m_ImGuiInitialized(false),
       m_NeedsYuvToRgbConversion(false),
       m_SwsContext(nullptr),
       m_RgbFrame(av_frame_alloc()),
@@ -32,6 +33,13 @@ SdlRenderer::SdlRenderer()
 
 SdlRenderer::~SdlRenderer()
 {
+    // ImGui cleanup
+    if (m_ImGuiInitialized) {
+        ImGui_ImplSDLRenderer2_Shutdown();
+        ImGui_ImplSDL2_Shutdown();
+        ImGui::DestroyContext();
+    }
+
 #ifdef HAVE_CUDA
     if (m_CudaGLHelper != nullptr) {
         delete m_CudaGLHelper;
@@ -209,6 +217,25 @@ bool SdlRenderer::initialize(PDECODER_PARAMETERS params)
         m_InitFailureReason = InitFailureReason::NoSoftwareSupport;
         return false;
     }
+
+    // Initialize ImGui
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGui::StyleColorsDark();
+
+    if (!ImGui_ImplSDL2_InitForSDLRenderer(params->window, m_Renderer)) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "ImGui_ImplSDL2_InitForSDLRenderer() failed");
+        return false;
+    }
+
+    if (!ImGui_ImplSDLRenderer2_Init(m_Renderer)) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "ImGui_ImplSDLRenderer2_Init() failed");
+        ImGui_ImplSDL2_Shutdown();
+        return false;
+    }
+
+    m_ImGuiInitialized = true;
 
 #ifdef Q_OS_WIN32
     // For some reason, using Direct3D9Ex breaks this with multi-monitor setups.
@@ -591,6 +618,22 @@ ReadbackRetry:
     // Draw the overlays
     for (int i = 0; i < Overlay::OverlayMax; i++) {
         renderOverlay((Overlay::OverlayType)i);
+    }
+
+    // ImGui rendering
+    if (m_ImGuiInitialized) {
+        ImGui_ImplSDLRenderer2_NewFrame();
+        ImGui_ImplSDL2_NewFrame();
+        ImGui::NewFrame();
+
+        // Create a visible window with background
+        ImGui::Begin("GhostOverlay", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Text("Hello World - ImGui Integration Working!");
+        ImGui::Text("Frame: %dx%d", frame->width, frame->height);
+        ImGui::End();
+
+        ImGui::Render();
+        ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), m_Renderer);
     }
 
     SDL_RenderPresent(m_Renderer);
