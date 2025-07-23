@@ -84,6 +84,7 @@ EGLRenderer::EGLRenderer(IFFmpegRenderer *backendRenderer)
         m_GlesMajorVersion(0),
         m_GlesMinorVersion(0),
         m_HasExtUnpackSubimage(false),
+        m_ImGuiInitialized(false),
         m_DummyRenderer(nullptr)
 {
     SDL_assert(backendRenderer);
@@ -100,6 +101,14 @@ EGLRenderer::~EGLRenderer()
     if (m_Context) {
         // Reattach the GL context to the main thread for destruction
         SDL_GL_MakeCurrent(m_Window, m_Context);
+
+        // Cleanup ImGui if it was initialized
+        if (m_ImGuiInitialized) {
+            ImGui_ImplOpenGL3_Shutdown();
+            ImGui_ImplSDL2_Shutdown();
+            ImGui::DestroyContext();
+        }
+
         if (m_LastRenderSync != EGL_NO_SYNC) {
             SDL_assert(m_eglDestroySync != nullptr);
             m_eglDestroySync(m_EGLDisplay, m_LastRenderSync);
@@ -640,6 +649,26 @@ bool EGLRenderer::initialize(PDECODER_PARAMETERS params)
     SDL_GL_MakeCurrent(m_Window, nullptr);
 
     if (err == GL_NO_ERROR) {
+        // Initialize ImGui now that EGL context is fully established
+        SDL_GL_MakeCurrent(m_Window, m_Context);
+
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGuiIO& io = ImGui::GetIO();
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
+        ImGui::StyleColorsDark();
+
+        if (ImGui_ImplSDL2_InitForOpenGL(m_Window, m_Context) &&
+            ImGui_ImplOpenGL3_Init("#version 330")) {
+            m_ImGuiInitialized = true;
+            EGL_LOG(Info, "ImGui initialized for hardware acceleration");
+        } else {
+            EGL_LOG(Error, "Failed to initialize ImGui");
+        }
+
+        SDL_GL_MakeCurrent(m_Window, nullptr);
+
         // If we got a working GL implementation via EGL, avoid using GLX from now on.
         // GLX will cause problems if we later want to use EGL again on this window.
         SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "EGL passed preflight checks. Using EGL for GL context creation.");
@@ -650,7 +679,7 @@ bool EGLRenderer::initialize(PDECODER_PARAMETERS params)
 }
 
 const float *EGLRenderer::getColorOffsets(const AVFrame* frame) {
-    static const float limitedOffsets[] = { 16.0f / 255.0f, 128.0f / 255.0f, 128.0f / 255.0f };
+    static const float limitedOffsets[] = { 16.0f / 255.0f, 128.0f / 255.0f, 128.0f };
     static const float fullOffsets[] = { 0.0f, 128.0f / 255.0f, 128.0f / 255.0f };
 
     return isFrameFullRange(frame) ? fullOffsets : limitedOffsets;
@@ -880,6 +909,21 @@ void EGLRenderer::renderFrame(AVFrame* frame)
     glViewport(0, 0, drawableWidth, drawableHeight);
     for (int i = 0; i < Overlay::OverlayMax; i++) {
         renderOverlay((Overlay::OverlayType)i, drawableWidth, drawableHeight);
+    }
+
+
+    // Render ImGui overlay if initialized
+    if (m_ImGuiInitialized) {
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplSDL2_NewFrame();
+        ImGui::NewFrame();
+
+        ImGui::Begin("Ghost Overlay");
+        ImGui::Text("Hello World");
+        ImGui::End();
+
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
 
     SDL_GL_SwapWindow(m_Window);
