@@ -388,7 +388,6 @@ public:
             SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
                         "av_hwdevice_ctx_create() failed for VT decoder: %d",
                         err);
-            m_InitFailureReason = InitFailureReason::NoSoftwareSupport;
             return false;
         }
 

@@ -369,7 +369,6 @@ VAAPIRenderer::initialize(PDECODER_PARAMETERS params)
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
                      "Failed to initialize VAAPI: %d",
                      status);
-        m_InitFailureReason = InitFailureReason::NoSoftwareSupport;
         return false;
     }
 
@@ -388,7 +387,6 @@ VAAPIRenderer::initialize(PDECODER_PARAMETERS params)
         // Fail and let our VDPAU renderer pick this up
         SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
                     "Avoiding VDPAU wrapper for VAAPI decoding");
-        m_InitFailureReason = InitFailureReason::NoSoftwareSupport;
         return false;
     }
 
@@ -437,7 +435,6 @@ VAAPIRenderer::initialize(PDECODER_PARAMETERS params)
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
                      "Failed to initialize VAAPI context: %d",
                      err);
-        m_InitFailureReason = InitFailureReason::NoSoftwareSupport;
         return false;
     }
 
