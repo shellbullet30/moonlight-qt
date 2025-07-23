@@ -24,8 +24,7 @@ VAAPIRenderer::VAAPIRenderer(int decoderSelectionPass)
       m_HwContext(nullptr),
       m_BlacklistedForDirectRendering(false),
       m_RequiresExplicitPixelFormat(false),
-      m_OverlayMutex(nullptr),
-      m_ImGuiInitialized(false)
+      m_OverlayMutex(nullptr)
 #ifdef HAVE_EGL
     , m_EglExportType(EglExportType::Unknown),
       m_EglImageFactory(this)
@@ -46,13 +45,6 @@ VAAPIRenderer::VAAPIRenderer(int decoderSelectionPass)
 
 VAAPIRenderer::~VAAPIRenderer()
 {
-    // ImGui cleanup
-    if (m_ImGuiInitialized) {
-        ImGui_ImplOpenGL3_Shutdown();
-        ImGui_ImplSDL2_Shutdown();
-        ImGui::DestroyContext();
-    }
-
     if (m_HwContext != nullptr) {
         AVHWDeviceContext* deviceContext = (AVHWDeviceContext*)m_HwContext->data;
         AVVAAPIDeviceContext* vaDeviceContext = (AVVAAPIDeviceContext*)deviceContext->hwctx;
@@ -456,25 +448,6 @@ VAAPIRenderer::initialize(PDECODER_PARAMETERS params)
                      "Failed to create overlay mutex");
         return false;
     }
-
-    // Initialize ImGui for hardware rendering
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    ImGui::StyleColorsDark();
-
-    if (!ImGui_ImplSDL2_InitForOpenGL(m_Window, nullptr)) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "ImGui_ImplSDL2_InitForOpenGL() failed");
-        return false;
-    }
-
-    if (!ImGui_ImplOpenGL3_Init("#version 330")) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "ImGui_ImplOpenGL3_Init() failed");
-        ImGui_ImplSDL2_Shutdown();
-        return false;
-    }
-
-    m_ImGuiInitialized = true;
 
     unsigned int formatCount = vaMaxNumSubpictureFormats(vaDeviceContext->display);
     if (formatCount != 0) {

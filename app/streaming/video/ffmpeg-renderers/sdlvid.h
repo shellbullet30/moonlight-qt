@@ -3,11 +3,6 @@
 #include "renderer.h"
 #include "swframemapper.h"
 
-// ImGui includes
-#include "imgui.h"
-#include "backends/imgui_impl_sdl2.h"
-#include "backends/imgui_impl_sdlrenderer2.h"
-
 #ifdef HAVE_CUDA
 #include "cuda.h"
 #endif
@@ -34,9 +29,6 @@ private:
 
     static void ffNoopFree(void *opaque, uint8_t *data);
 
-    // ImGui context
-    bool m_ImGuiInitialized;
-
     int m_VideoFormat;
     SDL_Renderer* m_Renderer;
     SDL_Texture* m_Texture;
@@ -55,3 +47,4 @@ private:
     CUDAGLInteropHelper* m_CudaGLHelper;
 #endif
 };
+
