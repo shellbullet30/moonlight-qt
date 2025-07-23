@@ -2,14 +2,6 @@
 
 #include "renderer.h"
 
-// ImGui includes for hardware renderer integration
-#include "imgui.h"
-#include "backends/imgui_impl_sdl2.h"
-#include "backends/imgui_impl_opengl3.h"
-
-// Forward declaration for ImGui OpenGL loader
-extern "C" bool ImGui_ImplOpenGL3_InitLoader();
-
 #define SDL_USE_BUILTIN_OPENGL_DEFINITIONS 1
 #include <SDL_egl.h>
 #include <SDL_opengles2.h>
@@ -81,13 +73,5 @@ private:
     int m_OldContextMajorVersion;
     int m_OldContextMinorVersion;
 
-    // ImGui integration for hardware acceleration
-    bool m_ImGuiInitialized;
-
     SDL_Renderer *m_DummyRenderer;
-
-    // HACK: Work around bug where renderer will repeatedly fail with:
-    // SDL_CreateRenderer() failed: Could not create GLES window surface
-    static SDL_Window* s_LastFailedWindow;
-    static int s_LastFailedVideoFormat;
 };
