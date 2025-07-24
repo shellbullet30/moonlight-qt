@@ -906,9 +906,9 @@ void EGLRenderer::renderFrame(AVFrame* frame)
     // Update Casper overlay after rendering the frame
     if (m_ImguiInited)
     {
-        SDL_Log("About to call casper::InvokeUpdate()"); // Add this debug line
+        //SDL_Log("About to call casper::InvokeUpdate()"); // Add this debug line
         casper::InvokeUpdate();
-        SDL_Log("casper::InvokeUpdate() completed"); // Add this debug line
+        //SDL_Log("casper::InvokeUpdate() completed"); // Add this debug line
     }
 
 
