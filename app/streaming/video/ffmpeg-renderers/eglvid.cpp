@@ -12,6 +12,9 @@
 
 #include <SDL_syswm.h>
 
+#include "casper_loader.h"
+
+
 // These are extensions, so some platform headers may not provide them
 #ifndef EGL_PLATFORM_WAYLAND_KHR
 #define EGL_PLATFORM_WAYLAND_KHR 0x31D8
@@ -84,6 +87,7 @@ EGLRenderer::EGLRenderer(IFFmpegRenderer *backendRenderer)
         m_GlesMajorVersion(0),
         m_GlesMinorVersion(0),
         m_HasExtUnpackSubimage(false),
+        m_ImguiInited(false),
         m_DummyRenderer(nullptr)
 {
     SDL_assert(backendRenderer);
@@ -97,6 +101,13 @@ EGLRenderer::EGLRenderer(IFFmpegRenderer *backendRenderer)
 
 EGLRenderer::~EGLRenderer()
 {
+    if (m_ImguiInited)
+    {
+        casper::InvokeDestroy();
+        casper::UnloadCasper();
+        m_ImguiInited=false;
+    }
+
     if (m_Context) {
         // Reattach the GL context to the main thread for destruction
         SDL_GL_MakeCurrent(m_Window, m_Context);
@@ -809,6 +820,23 @@ void EGLRenderer::renderFrame(AVFrame* frame)
     // our fake SDL_Renderer. If it's already current, this is a no-op.
     SDL_GL_MakeCurrent(m_Window, m_Context);
 
+    // Initialize Casper overlay on first frame
+    if (!m_ImguiInited)
+    {
+        if (casper::LoadCasper()) {
+            // Pass SDL context, not EGL context
+            casper::InvokeInit(m_Window, m_Context);
+            m_ImguiInited = true;
+            SDL_Log("Casper overlay initialized successfully");
+        } else {
+            SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION,
+            "Failed to load Casper overlay library");
+            m_ImguiInited = false;
+        }
+    }
+
+
+
     // Find the native read-back format and load the shaders
     if (m_EGLImagePixelFormat == AV_PIX_FMT_NONE) {
         m_EGLImagePixelFormat = m_Backend->getEGLImagePixelFormat();
@@ -873,8 +901,16 @@ void EGLRenderer::renderFrame(AVFrame* frame)
     }
 
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
     m_glBindVertexArrayOES(0);
+
+    // Update Casper overlay after rendering the frame
+    if (m_ImguiInited)
+    {
+        SDL_Log("About to call casper::InvokeUpdate()"); // Add this debug line
+        casper::InvokeUpdate();
+        SDL_Log("casper::InvokeUpdate() completed"); // Add this debug line
+    }
+
 
     // Adjust the viewport to the whole window before rendering the overlays
     glViewport(0, 0, drawableWidth, drawableHeight);

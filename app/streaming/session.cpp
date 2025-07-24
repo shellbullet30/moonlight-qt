@@ -7,6 +7,8 @@
 #include "SDL_compat.h"
 #include "utils.h"
 
+#include "casper_loader.h"
+
 #ifdef HAVE_FFMPEG
 #include "video/ffmpeg.h"
 #endif
@@ -2044,6 +2046,19 @@ void Session::execInternal()
             continue;
         }
 #endif
+
+
+           // Handle Casper overlay events first
+            if (casper::IsLoaded())
+            {
+                if (!casper::InvokeEvent(&event))
+                {
+                    // Event was consumed by overlay, skip normal processing
+                    presence.runCallbacks();
+                    continue;
+                }
+            }
+
         switch (event.type) {
         case SDL_QUIT:
             SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,

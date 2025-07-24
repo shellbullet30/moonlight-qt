@@ -32,6 +32,8 @@ private:
     const float *getColorMatrix(const AVFrame* frame);
     static int loadAndBuildShader(int shaderType, const char *filename);
 
+    bool m_ImguiInited=false;
+
     AVPixelFormat m_EGLImagePixelFormat;
     void *m_EGLDisplay;
     unsigned m_Textures[EGL_MAX_PLANES];

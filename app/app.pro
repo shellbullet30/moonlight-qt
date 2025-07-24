@@ -174,6 +174,7 @@ macx {
 }
 
 SOURCES += \
+    casper_loader.cpp \
     backend/nvaddress.cpp \
     backend/nvapp.cpp \
     cli/pair.cpp \
